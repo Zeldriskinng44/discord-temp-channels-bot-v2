@@ -10,8 +10,6 @@ const {
   UserSelectMenuBuilder,
   PermissionsBitField,
 } = require('discord.js');
-const { QuickDB } = require('quick.db');
-const db = new QuickDB();
 const config = require('../config/config');
 const getLocalizedMessage = require('../utils/getLocalizedMessage');
 
@@ -19,17 +17,24 @@ module.exports = {
   name: Events.InteractionCreate,
   async execute(client, interaction) {
     try {
-      const locale = client.locale.get(config.language) || client.locale.get('en');
+      const locale = client.locale.get(client.config.language) || client.locale.get('en');
+
+      if (!interaction.guild) return;
 
       const guild = interaction.guild;
       const member = interaction.member;
 
+      const db = client.db;
+
       if (interaction.isButton()) {
         const [action, channelId] = interaction.customId.split('_');
+
+        console.log(`Button Interaction - Action: ${action}, Channel ID: ${channelId}`);
 
         const channelData = await db.get(`channels_${guild.id}_${channelId}`);
 
         if (!channelData) {
+          console.warn(`Channel data not found for key: channels_${guild.id}_${channelId}`);
           return interaction.reply({
             content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
             ephemeral: true,
@@ -41,6 +46,7 @@ module.exports = {
         const ownerId = channelData.ownerId;
 
         if (!voiceChannel) {
+          console.warn(`Voice channel not found: ID ${channelData.voiceChannel}`);
           return interaction.reply({
             content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
             ephemeral: true,
@@ -48,6 +54,7 @@ module.exports = {
         }
 
         if (interaction.user.id !== ownerId) {
+          console.warn(`User ${interaction.user.id} attempted to perform action without permission.`);
           return interaction.reply({
             content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
             ephemeral: true,
@@ -64,6 +71,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'interactionCreate.channelHidden'),
                 ephemeral: true,
               });
+              console.log(`Channel ${voiceChannel.id} hidden successfully.`);
             } catch (error) {
               console.error('Error hiding channel:', error);
               await interaction.reply({
@@ -82,6 +90,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'interactionCreate.channelUnhidden'),
                 ephemeral: true,
               });
+              console.log(`Channel ${voiceChannel.id} unhidden successfully.`);
             } catch (error) {
               console.error('Error unhiding channel:', error);
               await interaction.reply({
@@ -110,6 +119,7 @@ module.exports = {
               renameModal.addComponents(renameActionRow);
 
               await interaction.showModal(renameModal);
+              console.log(`Rename modal shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error showing rename modal:', error);
               await interaction.reply({
@@ -128,6 +138,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'interactionCreate.channelLocked'),
                 ephemeral: true,
               });
+              console.log(`Channel ${voiceChannel.id} locked successfully.`);
             } catch (error) {
               console.error('Error locking channel:', error);
               await interaction.reply({
@@ -146,6 +157,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'interactionCreate.channelUnlocked'),
                 ephemeral: true,
               });
+              console.log(`Channel ${voiceChannel.id} unlocked successfully.`);
             } catch (error) {
               console.error('Error unlocking channel:', error);
               await interaction.reply({
@@ -172,6 +184,7 @@ module.exports = {
               limitModal.addComponents(limitActionRow);
 
               await interaction.showModal(limitModal);
+              console.log(`Set limit modal shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error showing set limit modal:', error);
               await interaction.reply({
@@ -184,7 +197,7 @@ module.exports = {
           case 'addMember':
             try {
               const userSelect = new UserSelectMenuBuilder()
-                .setCustomId(`addUser_select_${channelId}`)
+                .setCustomId(`addMember_select_${channelId}`)
                 .setPlaceholder(getLocalizedMessage(locale, 'addUser.selectUserPlaceholder'))
                 .setMinValues(1)
                 .setMaxValues(25);
@@ -196,6 +209,7 @@ module.exports = {
                 components: [addMemberRow],
                 ephemeral: true,
               });
+              console.log(`Add member select menu shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error handling addMember action:', error);
               await interaction.reply({
@@ -210,6 +224,7 @@ module.exports = {
               const voiceChannelMembers = voiceChannel.members.filter((m) => m.id !== interaction.user.id);
 
               if (voiceChannelMembers.size === 0) {
+                console.warn(`No members to remove in channel ${voiceChannel.id}.`);
                 return interaction.reply({
                   content: getLocalizedMessage(locale, 'removeMember.noMembersInChannel'),
                   ephemeral: true,
@@ -230,6 +245,7 @@ module.exports = {
                 components: [actionRow],
                 ephemeral: true,
               });
+              console.log(`Remove member select menu shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error handling removeMember action:', error);
               await interaction.reply({
@@ -254,6 +270,7 @@ module.exports = {
                 components: [actionRow],
                 ephemeral: true,
               });
+              console.log(`Blacklist select menu shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error handling blacklist action:', error);
               await interaction.reply({
@@ -289,6 +306,7 @@ module.exports = {
                 components: [deleteConfirmationRow],
                 ephemeral: true,
               });
+              console.log(`Delete confirmation sent for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error initiating delete confirmation:', error);
               await interaction.reply({
@@ -309,6 +327,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'deleteConfirmation.deletionSuccess') || '✅ Channel deleted successfully.',
                 ephemeral: true,
               });
+              console.log(`Channel ${voiceChannel.id} and text channel ${textChannel.id} deleted successfully.`);
             } catch (error) {
               console.error('Error deleting channels:', error);
               await interaction.reply({
@@ -324,6 +343,7 @@ module.exports = {
                 content: getLocalizedMessage(locale, 'deleteConfirmation.deletionCanceled'),
                 ephemeral: true,
               });
+              console.log(`Delete operation canceled for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error canceling delete:', error);
               await interaction.reply({
@@ -338,6 +358,7 @@ module.exports = {
               const voiceChannelMembers = voiceChannel.members.filter((m) => m.id !== interaction.user.id);
 
               if (voiceChannelMembers.size === 0) {
+                console.warn(`No eligible members to transfer ownership in channel ${voiceChannel.id}.`);
                 return interaction.reply({
                   content: getLocalizedMessage(locale, 'transferOwnership.noEligibleMembers'),
                   ephemeral: true,
@@ -359,6 +380,7 @@ module.exports = {
                 components: [actionRow],
                 ephemeral: true,
               });
+              console.log(`Transfer ownership select menu shown for channel ${voiceChannel.id}.`);
             } catch (error) {
               console.error('Error showing transfer ownership user select menu:', error);
               await interaction.reply({
@@ -369,6 +391,7 @@ module.exports = {
             break;
 
           default:
+            console.warn(`Unknown action received: ${action}`);
             await interaction.reply({
               content: getLocalizedMessage(locale, 'errors.unknownAction'),
               ephemeral: true,
@@ -376,9 +399,28 @@ module.exports = {
         }
       }
       else if (interaction.isUserSelectMenu()) {
-        const [action, channelId] = interaction.customId.split('_');
+        const parts = interaction.customId.split('_');
 
-        if (action === 'addUser') {
+        console.log(`User Select Menu Interaction - Parts: ${parts}`);
+
+        let action, subaction, channelId;
+
+        if (parts.length === 3) {
+          [action, subaction, channelId] = parts;
+        } else if (parts.length === 2) {
+          [action, channelId] = parts;
+          subaction = null;
+        } else {
+          console.warn(`Unexpected customId format: ${interaction.customId}`);
+          return interaction.reply({
+            content: getLocalizedMessage(locale, 'errors.unknownAction'),
+            ephemeral: true,
+          });
+        }
+
+        const db = client.db;
+
+        if (action === 'addMember' && subaction === 'select') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserIds = interaction.values;
@@ -395,6 +437,7 @@ module.exports = {
             const channelData = await db.get(`channels_${guild.id}_${channelId}`);
 
             if (!channelData) {
+              console.warn(`Channel data not found for key: channels_${guild.id}_${channelId}`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
                 ephemeral: true,
@@ -406,6 +449,7 @@ module.exports = {
             const ownerId = channelData.ownerId;
 
             if (!voiceChannel || !textChannel) {
+              console.warn(`Voice or Text channel not found for channelId: ${channelId}`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
                 ephemeral: true,
@@ -413,6 +457,7 @@ module.exports = {
             }
 
             if (interaction.user.id !== ownerId) {
+              console.warn(`User ${interaction.user.id} attempted to add members without permission.`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
                 ephemeral: true,
@@ -455,6 +500,7 @@ module.exports = {
                 });
 
                 addedMembers.push(`✅ ${user.user.tag}`);
+                console.log(`User ${user.user.tag} added to channel ${voiceChannel.id}.`);
               } catch (error) {
                 console.error(`Failed to add user ${user.user.tag}:`, error);
                 failedToAdd.push(`❌ ${user.user.tag}`);
@@ -482,14 +528,14 @@ module.exports = {
 
             await interaction.editReply({ content: replyMessage, ephemeral: true });
           } catch (error) {
-            console.error('Error handling addUser select menu:', error);
+            console.error('Error handling addMember select menu:', error);
             await interaction.editReply({
               content: getLocalizedMessage(locale, 'errors.operationFailed'),
               ephemeral: true,
             });
           }
         }
-        else if (action === 'removeMember') {
+        else if (action === 'removeMember' && subaction === 'select') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserIds = interaction.values;
@@ -506,6 +552,7 @@ module.exports = {
             const channelData = await db.get(`channels_${guild.id}_${channelId}`);
 
             if (!channelData) {
+              console.warn(`Channel data not found for key: channels_${guild.id}_${channelId}`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
                 ephemeral: true,
@@ -516,6 +563,7 @@ module.exports = {
             const ownerId = channelData.ownerId;
 
             if (!voiceChannel) {
+              console.warn(`Voice channel not found: ID ${channelData.voiceChannel}`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
                 ephemeral: true,
@@ -523,6 +571,7 @@ module.exports = {
             }
 
             if (interaction.user.id !== ownerId) {
+              console.warn(`User ${interaction.user.id} attempted to remove members without permission.`);
               return interaction.editReply({
                 content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
                 ephemeral: true,
@@ -543,6 +592,7 @@ module.exports = {
                 if (memberToRemove.voice.channel && memberToRemove.voice.channel.id === voiceChannel.id) {
                   await memberToRemove.voice.disconnect('Removed by channel owner');
                   removedMembers.push(`✅ ${memberToRemove.user.tag}`);
+                  console.log(`User ${memberToRemove.user.tag} removed from channel ${voiceChannel.id}.`);
                 } else {
                   failedToRemove.push(`❌ ${memberToRemove.user.tag} is not in the voice channel.`);
                 }
@@ -574,7 +624,7 @@ module.exports = {
             });
           }
         }
-        else if (action === 'transferOwnership') {
+        else if (action === 'transferOwnership' && subaction === 'select') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserId = interaction.values[0];
@@ -597,108 +647,134 @@ module.exports = {
             return;
           }
 
-          const channelData = await db.get(`channels_${guild.id}_${channelId}`);
-
-          if (!channelData) {
-            return interaction.editReply({
-              content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
-              ephemeral: true,
-            });
-          }
-
-          const voiceChannel = guild.channels.cache.get(channelData.voiceChannel);
-          const textChannel = guild.channels.cache.get(channelData.textChannel);
-          const ownerId = channelData.ownerId;
-
-          if (!voiceChannel || !textChannel) {
-            return interaction.editReply({
-              content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
-              ephemeral: true,
-            });
-          }
-
-          if (interaction.user.id !== ownerId) {
-            return interaction.editReply({
-              content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
-              ephemeral: true,
-            });
-          }
-
           try {
-            await voiceChannel.permissionOverwrites.edit(newOwner.id, {
-              ManageChannels: true,
-              ManageRoles: true,
-            });
-            await voiceChannel.permissionOverwrites.edit(ownerId, {
-              ManageChannels: false,
-              ManageRoles: false,
-            });
+            const channelData = await db.get(`channels_${guild.id}_${channelId}`);
 
-            await textChannel.permissionOverwrites.edit(newOwner.id, {
-              ManageChannels: true,
-              ManageRoles: true,
-            });
-            await textChannel.permissionOverwrites.edit(ownerId, {
-              ManageChannels: false,
-              ManageRoles: false,
-            });
-
-            channelData.ownerId = newOwner.id;
-            await db.set(`channels_${guild.id}_${channelId}`, channelData);
-
-            await interaction.editReply({
-              content:
-                getLocalizedMessage(locale, 'transferOwnership.success', { user: newOwner.user.tag }) ||
-                `✅ Ownership has been transferred to ${newOwner.user.tag}.`,
-              ephemeral: true,
-            });
-
-            try {
-              await newOwner.send({
-                content:
-                  getLocalizedMessage(locale, 'transferOwnership.dmNotification', {
-                    user: newOwner.user.username,
-                    channel: voiceChannel.toString(),
-                    guild: interaction.guild.name,
-                  }) ||
-                  `🎉 You've been made the owner of the channel ${voiceChannel.toString()} in **${interaction.guild.name}**.`,
+            if (!channelData) {
+              console.warn(`Channel data not found for key: channels_${guild.id}_${channelId}`);
+              return interaction.editReply({
+                content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
+                ephemeral: true,
               });
-            } catch (error) {
-              console.error('Error sending DM to new owner:', error);
+            }
+
+            const voiceChannel = guild.channels.cache.get(channelData.voiceChannel);
+            const textChannel = guild.channels.cache.get(channelData.textChannel);
+            const ownerId = channelData.ownerId;
+
+            if (!voiceChannel || !textChannel) {
+              console.warn(`Voice or Text channel not found for channelId: ${channelId}`);
+              return interaction.editReply({
+                content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
+                ephemeral: true,
+              });
+            }
+
+            if (interaction.user.id !== ownerId) {
+              console.warn(`User ${interaction.user.id} attempted to transfer ownership without permission.`);
+              return interaction.editReply({
+                content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
+                ephemeral: true,
+              });
             }
 
             try {
-              const previousOwner = await guild.members.fetch(ownerId).catch(() => null);
-              if (previousOwner) {
-                await previousOwner.send({
+              await voiceChannel.permissionOverwrites.edit(newOwner.id, {
+                ManageChannels: true,
+                ManageRoles: true,
+              });
+              await voiceChannel.permissionOverwrites.edit(ownerId, {
+                ManageChannels: false,
+                ManageRoles: false,
+              });
+
+              await textChannel.permissionOverwrites.edit(newOwner.id, {
+                ManageChannels: true,
+                ManageRoles: true,
+              });
+              await textChannel.permissionOverwrites.edit(ownerId, {
+                ManageChannels: false,
+                ManageRoles: false,
+              });
+
+              channelData.ownerId = newOwner.id;
+              await db.set(`channels_${guild.id}_${channelId}`, channelData);
+
+              await interaction.editReply({
+                content:
+                  getLocalizedMessage(locale, 'transferOwnership.success', { user: newOwner.user.tag }) ||
+                  `✅ Ownership has been transferred to ${newOwner.user.tag}.`,
+                ephemeral: true,
+              });
+              console.log(`Ownership of channel ${voiceChannel.id} transferred to ${newOwner.user.tag}.`);
+
+              try {
+                await newOwner.send({
                   content:
-                    getLocalizedMessage(locale, 'transferOwnership.previousOwnerNotification', {
+                    getLocalizedMessage(locale, 'transferOwnership.dmNotification', {
                       user: newOwner.user.username,
                       channel: voiceChannel.toString(),
                       guild: interaction.guild.name,
                     }) ||
-                    `🔄 Ownership of the channel ${voiceChannel.toString()} in **${interaction.guild.name}** has been transferred to ${newOwner.user.tag}.`,
+                    `🎉 You've been made the owner of the channel ${voiceChannel.toString()} in **${interaction.guild.name}**.`,
                 });
+                console.log(`DM sent to new owner ${newOwner.user.tag}.`);
+              } catch (error) {
+                console.error('Error sending DM to new owner:', error);
+              }
+
+              try {
+                const previousOwner = await guild.members.fetch(ownerId).catch(() => null);
+                if (previousOwner) {
+                  await previousOwner.send({
+                    content:
+                      getLocalizedMessage(locale, 'transferOwnership.previousOwnerNotification', {
+                        user: newOwner.user.username,
+                        channel: voiceChannel.toString(),
+                        guild: interaction.guild.name,
+                      }) ||
+                      `🔄 Ownership of the channel ${voiceChannel.toString()} in **${interaction.guild.name}** has been transferred to ${newOwner.user.tag}.`,
+                  });
+                  console.log(`DM sent to previous owner ${previousOwner.user.tag}.`);
+                }
+              } catch (error) {
+                console.error('Error sending DM to previous owner:', error);
               }
             } catch (error) {
-              console.error('Error sending DM to previous owner:', error);
+              console.error('Error transferring ownership:', error);
+              await interaction.editReply({
+                content: getLocalizedMessage(locale, 'transferOwnership.transferFailed') || '❌ Failed to transfer ownership.',
+                ephemeral: true,
+              });
             }
           } catch (error) {
-            console.error('Error transferring ownership:', error);
+            console.error('Error fetching new owner:', error);
             await interaction.editReply({
-              content: getLocalizedMessage(locale, 'transferOwnership.transferFailed') || '❌ Failed to transfer ownership.',
+              content: getLocalizedMessage(locale, 'errors.operationFailed'),
               ephemeral: true,
             });
           }
+        }
+        else {
+          console.warn(`Unhandled User Select Menu action: ${action}`);
+          await interaction.reply({
+            content: getLocalizedMessage(locale, 'errors.unknownAction'),
+            ephemeral: true,
+          });
         }
       }
       else if (interaction.isModalSubmit()) {
         const [modalType, channelId] = interaction.customId.split('_');
 
+        console.log(`Modal Submit Interaction - Modal Type: ${modalType}, Channel ID: ${channelId}`);
+
+        const db = client.db;
+
         try {
           const channelData = await db.get(`channels_${guild.id}_${channelId}`);
 
           if (!channelData) {
+            console.warn(`Channel data not found for key: channels_${guild.id}_${channelId}`);
             return interaction.reply({
               content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
               ephemeral: true,
@@ -709,6 +785,7 @@ module.exports = {
           const ownerId = channelData.ownerId;
 
           if (!voiceChannel) {
+            console.warn(`Voice channel not found: ID ${channelData.voiceChannel}`);
             return interaction.reply({
               content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
               ephemeral: true,
@@ -716,6 +793,7 @@ module.exports = {
           }
 
           if (interaction.user.id !== ownerId) {
+            console.warn(`User ${interaction.user.id} attempted to submit modal without permission.`);
             return interaction.reply({
               content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
               ephemeral: true,
@@ -726,6 +804,7 @@ module.exports = {
             case 'renameModal':
               const newName = interaction.fields.getTextInputValue('newName').trim();
               if (newName.length < 1 || newName.length > 100) {
+                console.warn(`Invalid channel name length: ${newName.length}`);
                 return interaction.reply({
                   content: getLocalizedMessage(locale, 'errors.invalidChannelName'),
                   ephemeral: true,
@@ -738,6 +817,7 @@ module.exports = {
                   content: getLocalizedMessage(locale, 'voiceStateUpdate.channelRenamed', { newName }),
                   ephemeral: true,
                 });
+                console.log(`Channel ${voiceChannel.id} renamed to ${newName}.`);
               } catch (error) {
                 console.error('Error renaming channel:', error);
                 await interaction.reply({
@@ -752,6 +832,7 @@ module.exports = {
               const newLimit = parseInt(newLimitStr, 10);
 
               if (isNaN(newLimit) || newLimit < 1 || newLimit > 99) {
+                console.warn(`Invalid user limit: ${newLimitStr}`);
                 return interaction.reply({
                   content: getLocalizedMessage(locale, 'errors.invalidUserLimit'),
                   ephemeral: true,
@@ -764,6 +845,7 @@ module.exports = {
                   content: getLocalizedMessage(locale, 'voiceStateUpdate.userLimitSet', { newLimit }),
                   ephemeral: true,
                 });
+                console.log(`User limit for channel ${voiceChannel.id} set to ${newLimit}.`);
               } catch (error) {
                 console.error('Error setting user limit:', error);
                 await interaction.reply({
@@ -774,6 +856,7 @@ module.exports = {
               break;
 
             default:
+              console.warn(`Unknown modal type: ${modalType}`);
               await interaction.reply({
                 content: getLocalizedMessage(locale, 'errors.unknownAction'),
                 ephemeral: true,
