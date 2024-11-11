@@ -8,7 +8,6 @@ const {
   TextInputBuilder,
   TextInputStyle,
   UserSelectMenuBuilder,
-  StringSelectMenuBuilder,
   PermissionsBitField,
 } = require('discord.js');
 const { QuickDB } = require('quick.db');
@@ -184,31 +183,11 @@ module.exports = {
 
           case 'addMember':
             try {
-              const allMembers = await guild.members.fetch();
-              const memberOptions = allMembers
-                .filter((m) => m.id !== interaction.user.id)
-                .map((member) => ({
-                  label:
-                    member.user.tag.length > 25
-                      ? member.user.tag.slice(0, 22) + '...'
-                      : member.user.tag,
-                  value: member.id,
-                }))
-                .slice(0, 25);
-
-              if (memberOptions.length === 0) {
-                return interaction.reply({
-                  content: getLocalizedMessage(locale, 'addUser.noMembersAvailable'),
-                  ephemeral: true,
-                });
-              }
-
-              const userSelect = new StringSelectMenuBuilder()
+              const userSelect = new UserSelectMenuBuilder()
                 .setCustomId(`addUser_select_${channelId}`)
                 .setPlaceholder(getLocalizedMessage(locale, 'addUser.selectUserPlaceholder'))
                 .setMinValues(1)
-                .setMaxValues(memberOptions.length)
-                .addOptions(memberOptions);
+                .setMaxValues(25);
 
               const addMemberRow = new ActionRowBuilder().addComponents(userSelect);
 
@@ -237,20 +216,12 @@ module.exports = {
                 });
               }
 
-              const memberOptions = voiceChannelMembers.map((member) => ({
-                label:
-                  member.user.tag.length > 25
-                    ? member.user.tag.slice(0, 22) + '...'
-                    : member.user.tag,
-                value: member.id,
-              }));
-
-              const userSelect = new StringSelectMenuBuilder()
+              const userSelect = new UserSelectMenuBuilder()
                 .setCustomId(`removeMember_select_${channelId}`)
                 .setPlaceholder(getLocalizedMessage(locale, 'removeMember.selectUserPlaceholder'))
                 .setMinValues(1)
-                .setMaxValues(memberOptions.length)
-                .addOptions(memberOptions);
+                .setMaxValues(25)
+                .setDisabled(false);
 
               const actionRow = new ActionRowBuilder().addComponents(userSelect);
 
@@ -373,23 +344,11 @@ module.exports = {
                 });
               }
 
-              const memberOptions = voiceChannelMembers.map((member) => ({
-                label:
-                  member.user.tag.length > 25
-                    ? member.user.tag.slice(0, 22) + '...'
-                    : member.user.tag,
-                value: member.id,
-              }));
-
-              const userSelect = new StringSelectMenuBuilder()
+              const userSelect = new UserSelectMenuBuilder()
                 .setCustomId(`transferOwnership_select_${channelId}`)
-                .setPlaceholder(
-                  getLocalizedMessage(locale, 'transferOwnership.selectUserPlaceholder') ||
-                    'Select a user to transfer ownership'
-                )
+                .setPlaceholder(getLocalizedMessage(locale, 'transferOwnership.selectUserPlaceholder'))
                 .setMinValues(1)
-                .setMaxValues(1)
-                .addOptions(memberOptions);
+                .setMaxValues(1);
 
               const actionRow = new ActionRowBuilder().addComponents(userSelect);
 
@@ -416,10 +375,10 @@ module.exports = {
             });
         }
       }
-      else if (interaction.isStringSelectMenu()) {
-        const [action, subAction, channelId] = interaction.customId.split('_');
+      else if (interaction.isUserSelectMenu()) {
+        const [action, channelId] = interaction.customId.split('_');
 
-        if (action === 'addUser' && subAction === 'select') {
+        if (action === 'addUser') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserIds = interaction.values;
@@ -529,7 +488,8 @@ module.exports = {
               ephemeral: true,
             });
           }
-        } else if (action === 'removeMember' && subAction === 'select') {
+        }
+        else if (action === 'removeMember') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserIds = interaction.values;
@@ -613,7 +573,8 @@ module.exports = {
               ephemeral: true,
             });
           }
-        } else if (action === 'transferOwnership' && subAction === 'select') {
+        }
+        else if (action === 'transferOwnership') {
           await interaction.deferReply({ ephemeral: true });
 
           const selectedUserId = interaction.values[0];
@@ -726,119 +687,6 @@ module.exports = {
             console.error('Error transferring ownership:', error);
             await interaction.editReply({
               content: getLocalizedMessage(locale, 'transferOwnership.transferFailed') || '❌ Failed to transfer ownership.',
-              ephemeral: true,
-            });
-          }
-        }
-      }
-      else if (interaction.isUserSelectMenu()) {
-        const [action, subAction, channelId] = interaction.customId.split('_');
-
-        if (action === 'blacklist' && subAction === 'select') {
-          await interaction.deferReply({ ephemeral: true });
-
-          const selectedUsers = interaction.users;
-
-          if (!selectedUsers || selectedUsers.size === 0) {
-            await interaction.editReply({
-              content: getLocalizedMessage(locale, 'blacklist.userNotSelected'),
-              ephemeral: true,
-            });
-            return;
-          }
-
-          try {
-            const channelData = await db.get(`channels_${guild.id}_${channelId}`);
-
-            if (!channelData) {
-              return interaction.editReply({
-                content: getLocalizedMessage(locale, 'interactionCreate.channelDataNotFound'),
-                ephemeral: true,
-              });
-            }
-
-            const voiceChannel = guild.channels.cache.get(channelData.voiceChannel);
-            const ownerId = channelData.ownerId;
-
-            if (!voiceChannel) {
-              return interaction.editReply({
-                content: getLocalizedMessage(locale, 'interactionCreate.voiceChannelNotFound'),
-                ephemeral: true,
-              });
-            }
-
-            if (interaction.user.id !== ownerId) {
-              return interaction.editReply({
-                content: getLocalizedMessage(locale, 'interactionCreate.permissionDenied'),
-                ephemeral: true,
-              });
-            }
-
-            const blacklistedMembers = [];
-            const alreadyBlacklisted = [];
-            const failedToBlacklist = [];
-
-            for (const user of selectedUsers.values()) {
-              const userId = user.id;
-              const memberToBlacklist = await guild.members.fetch(userId).catch(() => null);
-              if (!memberToBlacklist) {
-                failedToBlacklist.push(`❌ User ${user.tag} not found.`);
-                continue;
-              }
-
-              if (channelData.blacklist && channelData.blacklist.includes(userId)) {
-                alreadyBlacklisted.push(`⚠️ ${memberToBlacklist.user.tag}`);
-                continue;
-              }
-
-              try {
-                await voiceChannel.permissionOverwrites.edit(userId, {
-                  Connect: false,
-                });
-
-                channelData.blacklist.push(userId);
-                blacklistedMembers.push(`✅ ${memberToBlacklist.user.tag}`);
-
-                if (
-                  memberToBlacklist.voice.channel &&
-                  memberToBlacklist.voice.channel.id === voiceChannel.id
-                ) {
-                  await memberToBlacklist.voice.disconnect('Blacklisted by channel owner');
-                }
-              } catch (error) {
-                console.error(`Failed to blacklist user ${memberToBlacklist.user.tag}:`, error);
-                failedToBlacklist.push(`❌ ${memberToBlacklist.user.tag}`);
-              }
-            }
-
-            await db.set(`channels_${guild.id}_${channelId}`, channelData);
-
-            let replyMessage = '';
-
-            if (blacklistedMembers.length > 0) {
-              replyMessage += `✅ ${getLocalizedMessage(locale, 'blacklist.blacklistedSuccessfully').replace(
-                '[user]',
-                blacklistedMembers.join(', ')
-              )}\n`;
-            }
-
-            if (alreadyBlacklisted.length > 0) {
-              replyMessage += `⚠️ ${getLocalizedMessage(locale, 'blacklist.alreadyBlacklisted')}: ${alreadyBlacklisted.join(
-                ', '
-              )}.\n`;
-            }
-
-            if (failedToBlacklist.length > 0) {
-              replyMessage += `❌ ${getLocalizedMessage(locale, 'blacklist.blacklistFailed')}: ${failedToBlacklist.join(
-                ', '
-              )}.\n`;
-            }
-
-            await interaction.editReply({ content: replyMessage, ephemeral: true });
-          } catch (error) {
-            console.error('Error handling blacklist select menu:', error);
-            await interaction.editReply({
-              content: getLocalizedMessage(locale, 'errors.operationFailed'),
               ephemeral: true,
             });
           }
