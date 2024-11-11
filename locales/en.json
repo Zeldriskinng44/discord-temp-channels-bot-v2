@@ -1,0 +1,109 @@
+{
+  "addUser": {
+    "userNotSelected": "❌ You did not select any user.",
+    "userNotFound": "❌ The selected user was not found.",
+    "alreadyInChannel": "⚠️ The user is already in the channel.",
+    "addedSuccessfully": "✅ Successfully added [user] to the channel.",
+    "addFailed": "❌ Failed to add the user to the channel.",
+    "dmNotification": "Hello [user],\n\nYou have been added to the channel [channel] in **[guild]**.",
+    "selectUserPlaceholder": "Select a user to add",
+    "selectUserPrompt": "🔍 Please select a user to add to your channel:"
+  },
+  "interactionCreate": {
+    "channelDataNotFound": "❌ Channel data not found.",
+    "voiceChannelNotFound": "❌ Voice channel not found.",
+    "textChannelNotFound": "❌ Text channel not found.",
+    "permissionDenied": "❌ You do not have permission to manage this channel.",
+    "channelHidden": "🔒 Channel has been hidden from everyone.",
+    "channelUnhidden": "🔓 Channel has been made visible to everyone.",
+    "channelLocked": "🔒 Channel has been locked. Others cannot join now.",
+    "channelUnlocked": "🔓 Channel has been unlocked. Others can join now."
+  },
+  "voiceStateUpdate": {
+    "channelDeleted": "🗑️ Deleted channel: [channelId]",
+    "channelCreated": "🎉 Temporary voice channel created with ID: [channelId]",
+    "textChannelCreated": "📄 Temporary text channel created with ID: [textChannelId]",
+    "controlPanelSent": "🛠️ Control panel sent in text channel: [textChannelId]",
+    "willDeleteIn": "⚠️ This channel will be deleted in 5 seconds...",
+    "channelDataSaved": "💾 Channel data saved for member: [memberId]",
+    "textChannelDeleted": "🗑️ Deleted text channel: [textChannelId]",
+    "channelDataDeleted": "💾 Deleted channel data for member: [memberId]",
+    "error": "❌ An error occurred: [error]",
+    "channelRenamed": "✅ Channel renamed to **[newName]**.",
+    "userLimitSet": "✅ Channel user limit set to **[newLimit]**.",
+    "topicSet": "✅ Channel topic set to **[newTopic]**."
+  },
+  "deleteConfirmation": {
+    "title": "🗑️ Delete Confirmation",
+    "prompt": "🗑️ **Are you sure you want to delete this channel?**",
+    "willDeleteIn": "⚠️ This channel will be deleted in 5 seconds...",
+    "deletionCanceled": "✅ Channel deletion has been canceled.",
+    "deletionSuccess": "✅ Channel deleted successfully.",
+    "confirmDelete": "✅ Yes",
+    "cancelDelete": "❌ No"
+  },
+  "modals": {
+    "renameTitle": "✏️ Rename Voice Channel",
+    "renameLabel": "Enter the new channel name:",
+    "renamePlaceholder": "New channel name",
+    "setLimitTitle": "📈 Set Voice Channel Limit",
+    "setLimitLabel": "Enter the new user limit (1-99):",
+    "setLimitPlaceholder": "e.g., 10"
+  },
+  "controlPanel": {
+    "title": "🎛️ Voice Channel Control Panel",
+    "description": "Use the buttons below to manage your voice channel.",
+    "color": "#0099ff"
+  },
+  "buttons": {
+    "hide": "🔒 Hide Channel",
+    "unhide": "🔓 Unhide Channel",
+    "rename": "✏️ Rename Channel",
+    "lock": "🔒 Lock Channel",
+    "unlock": "🔓 Unlock Channel",
+    "setLimit": "📈 Set Limit",
+    "addMember": "➕ Add Member",
+    "removeMember": "❌ Remove Member",
+    "blacklist": "🚫 Blacklist",
+    "delete": "🗑️ Delete Channel",
+    "transferOwnership": "🔄 Transfer Ownership",
+    "confirmDelete": "✅ Yes",
+    "cancelDelete": "❌ No"
+  },
+  "transferOwnership": {
+    "selectUserPlaceholder": "Select a user to transfer ownership",
+    "selectUserPrompt": "🔍 Please select a user to transfer ownership to:",
+    "userNotSelected": "❌ No user was selected.",
+    "userNotFound": "❌ The selected user was not found.",
+    "success": "✅ Ownership has been transferred to [user].",
+    "transferFailed": "❌ Failed to transfer ownership.",
+    "dmNotification": "Hello [user],\n\nYou have been made the owner of the channel [channel] in **[guild]**.",
+    "previousOwnerNotification": "🔄 Ownership of the channel [channel] in **[guild]** has been transferred to [user].",
+    "noEligibleMembers": "❌ There are no eligible members to transfer ownership."
+  },
+  "removeMember": {
+    "noMembersInChannel": "⚠️ There are no other members in your voice channel.",
+    "selectUserPlaceholder": "Select member(s) to remove",
+    "selectUserPrompt": "🔍 Please select member(s) to remove from your voice channel:",
+    "userNotSelected": "❌ No user was selected.",
+    "removedSuccessfully": "✅ Successfully removed [user] from the voice channel.",
+    "removeFailed": "❌ Failed to remove the following members"
+  },
+  "blacklist": {
+    "selectUserPlaceholder": "Select user(s) to blacklist",
+    "selectUserPrompt": "🔍 Please select user(s) to blacklist:",
+    "userNotSelected": "❌ No user was selected.",
+    "blacklistedSuccessfully": "✅ Successfully blacklisted [user].",
+    "alreadyBlacklisted": "⚠️ The following user(s) are already blacklisted",
+    "blacklistFailed": "❌ Failed to blacklist the following users"
+  },
+  "errors": {
+    "unknownAction": "❓ Unknown action.",
+    "operationFailed": "❌ Operation failed.",
+    "invalidChannelName": "❌ Invalid channel name length.",
+    "invalidUserLimit": "❌ Please enter a valid number between 1 and 99.",
+    "invalidTopicLength": "❌ Invalid topic length.",
+    "channelNotFound": "❌ Channel not found.",
+    "noMembersToAdd": "❌ No members available to add."
+  }
+}
